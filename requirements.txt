@@ -1,0 +1,9 @@
+docx
+pandas
+python_docx
+pywin32
+xlrd
+openpyxl
+jinja2
+docxtpl
+numpy
