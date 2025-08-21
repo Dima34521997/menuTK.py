@@ -1,8 +1,7 @@
 import sys
 from PySide6.QtWidgets import (
     QApplication, QWidget, QPushButton, QTextEdit, QVBoxLayout,
-    QHBoxLayout, QFileDialog, QLabel, QLineEdit, QCheckBox,
-    QMessageBox
+    QHBoxLayout, QFileDialog, QLabel, QLineEdit, QCheckBox
 )
 from PySide6.QtCore import Qt
 import json
@@ -191,7 +190,7 @@ class UI(QWidget):
 
         # --- Список файлов ---
         self.txt_FilesListView = QTextEdit()
-        self.txt_FilesListView.setReadOnly(True)
+        self.txt_FilesListView.setReadOnly(False)
         self.txt_FilesListView.setMaximumHeight(140)
         main_layout.addWidget(self.txt_FilesListView)
 
@@ -217,7 +216,7 @@ class UI(QWidget):
         def add_field(layout, label_text, line_edit, button=None):
             h_layout = QHBoxLayout()
             label = QLabel(label_text)
-            label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)  # Выравнивание по левому краю
+            label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
             h_layout.addWidget(label)
             h_layout.addWidget(line_edit)
             if button:
@@ -298,7 +297,7 @@ class UI(QWidget):
             with open(PROFILE_FILE, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=4)
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить Profile.json: {e}")
+            self.log_error(f"Не удалось сохранить Profile.json: {e}")
 
     def onOpen(self):
         files, _ = QFileDialog.getOpenFileNames(
@@ -315,35 +314,41 @@ class UI(QWidget):
         files_to_open.clear()
         self.txt_FilesListView.clear()
 
+    def log_error(self, message):
+        self.txt_FilesListView.append(f'<span style="color: red;">= {message}</span>')
+
+    def log_success(self, message):
+        self.txt_FilesListView.append(f'<span style="color: green;"> {message}</span>')
+
     def createPerechen(self):
-        if files_to_open:
-            try:
-                perechen_elementov.execute(files_to_open, self.c1.isChecked())
-                self.txt_FilesListView.append("\n✅ ПЭ создан(-ы)!")
-            except Exception as e:
-                QMessageBox.critical(self, "Ошибка", f"Ошибка при создании ПЭ: {e}")
-        else:
-            QMessageBox.critical(self, "Ошибка", "Не выбрано ни одного файла!")
+        if not files_to_open:
+            self.log_error("Не выбрано ни одного файла!")
+            return
+        try:
+            perechen_elementov.execute(files_to_open, self.c1.isChecked())
+            self.log_success("ПЭ создан(-ы)!")
+        except Exception as e:
+            self.log_error(f"Ошибка при создании ПЭ: {e}")
 
     def createSpecification(self):
-        if files_to_open:
-            try:
-                specification.execute(files_to_open, self.c1.isChecked())
-                self.txt_FilesListView.append("\n✅ СП создана(-ы)!")
-            except Exception as e:
-                QMessageBox.critical(self, "Ошибка", f"Ошибка при создании СП: {e}")
-        else:
-            QMessageBox.critical(self, "Ошибка", "Не выбрано ни одного файла!")
+        if not files_to_open:
+            self.log_error("Не выбрано ни одного файла!")
+            return
+        try:
+            specification.execute(files_to_open, self.c1.isChecked())
+            self.log_success("СП создана(-ы)!")
+        except Exception as e:
+            self.log_error(f"Ошибка при создании СП: {e}")
 
     def createVedomost(self):
-        if files_to_open:
-            try:
-                vedomost_pokupnih_izdeliy.execute(files_to_open)
-                self.txt_FilesListView.append("\n✅ ВП создана!")
-            except Exception as e:
-                QMessageBox.critical(self, "Ошибка", f"Ошибка при создании ВП: {e}")
-        else:
-            QMessageBox.critical(self, "Ошибка", "Не выбрано ни одного файла!")
+        if not files_to_open:
+            self.log_error("Не выбрано ни одного файла!")
+            return
+        try:
+            vedomost_pokupnih_izdeliy.execute(files_to_open)
+            self.log_success("ВП создана!")
+        except Exception as e:
+            self.log_error(f"Ошибка при создании ВП: {e}")
 
 
 def main():
@@ -361,8 +366,9 @@ def main():
         try:
             with open(PROFILE_FILE, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=4)
-        except:
-            pass
+        except Exception as e:
+            # Даже при выходе, попробуем вывести ошибку в консоль
+            print(f"Ошибка сохранения при выходе: {e}")
 
     app.aboutToQuit.connect(save_on_exit)
     sys.exit(app.exec())

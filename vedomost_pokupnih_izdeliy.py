@@ -64,13 +64,13 @@ def export_to_word():
     try:
         for char in sorted(dict_chars.keys()):
             for chip_index, chip in enumerate(dict_chars[char]):
-                man = chip.man
-                chip.man = ''
+                man = chip.manuf
+                chip.manuf = ''
                 # Перезаписываю наименование уже без производителя
                 chip.name = chip._make_name()[:-2]
 
                 chip.split_name(shift_threshold=32)
-                chip.desig = []
+                chip.designator = []
 
                 # Вставка наименования категории компонентов
                 if chip_index == 0:
@@ -81,10 +81,10 @@ def export_to_word():
                         start_row = False
 
                         row_index = int(row.cells[0].paragraphs[0].runs[0].text)
-                        if row_index + len(chip.name) - 1 > rows_len or row_index + len(chip.desig) - 1 > rows_len \
+                        if row_index + len(chip.name) - 1 > rows_len or row_index + len(chip.designator) - 1 > rows_len \
                                 or (
                                 isinstance(chip.quantity, list) and row_index + len(chip.quantity) - 1 > rows_len) or \
-                                (isinstance(chip.man, list) and row_index + len(chip.man) - 1 > rows_len):
+                                (isinstance(chip.manuf, list) and row_index + len(chip.manuf) - 1 > rows_len):
                             table = next(tables)
                             rows = iter(table.rows)
                             next(rows)
@@ -102,10 +102,10 @@ def export_to_word():
                             start_row = False
 
                             row_index = int(row.cells[0].paragraphs[0].runs[0].text)
-                            if row_index + len(chip.name) - 1 > rows_len or row_index + len(chip.desig) - 1 > rows_len \
+                            if row_index + len(chip.name) - 1 > rows_len or row_index + len(chip.designator) - 1 > rows_len \
                                     or (isinstance(chip.quantity, list) and row_index + len(
                                 chip.quantity) - 1 > rows_len) or \
-                                    (isinstance(chip.man, list) and row_index + len(chip.man) - 1 > rows_len):
+                                    (isinstance(chip.manuf, list) and row_index + len(chip.manuf) - 1 > rows_len):
                                 table = next(tables)
                                 rows = iter(table.rows)
                                 next(rows)
@@ -157,14 +157,14 @@ def export_to_word():
 
                 # Вставка строки в документ и ее оформление
                 # Если количество строк не хватает (для переносов или модулей), то переходим на следующую таблицу
-                chip.man = man
+                chip.manuf = man
                 chip.split_man(shift_threshold=33)
 
                 rows_len = len(table.rows) - 2
                 row_index = int(row.cells[0].paragraphs[0].runs[0].text)
-                if row_index + len(chip.name) - 1 > rows_len or row_index + len(chip.desig) - 1 > rows_len \
+                if row_index + len(chip.name) - 1 > rows_len or row_index + len(chip.designator) - 1 > rows_len \
                         or (isinstance(chip.quantity, list) and row_index + len(chip.quantity) - 1 > rows_len) or \
-                        (isinstance(chip.man, list) and row_index + len(chip.man) - 1 > rows_len):
+                        (isinstance(chip.manuf, list) and row_index + len(chip.manuf) - 1 > rows_len):
                     table = next(tables)
                     rows = iter(table.rows)
                     next(rows)
@@ -173,7 +173,7 @@ def export_to_word():
                     row = next(rows)
 
                 if chip.char == 'R' or chip.char == 'C':
-                    row.cells[2].text = str(chip.manpnb)
+                    row.cells[2].text = str(chip.man_part_num)
                     row.cells[2].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.CENTER
 
                 row.cells[6].text = str(chip.quantity)
@@ -182,7 +182,7 @@ def export_to_word():
                 row.cells[9].text = str(chip.quantity)
                 row.cells[9].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.CENTER
 
-                row.cells[10].text = chip.prim
+                row.cells[10].text = chip.notice
                 row.cells[10].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.LEFT
 
                 while True:
@@ -194,15 +194,15 @@ def export_to_word():
                         pass
 
                     try:
-                        row.cells[4].text = str(chip.man[0])
+                        row.cells[4].text = str(chip.manuf[0])
                         row.cells[4].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.CENTER
-                        del chip.man[0]
+                        del chip.manuf[0]
                     except IndexError:
                         pass
                     except TypeError:
-                        row.cells[5].text = str(chip.man)
+                        row.cells[5].text = str(chip.manuf)
                         row.cells[5].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.CENTER
-                        chip.man = ''
+                        chip.manuf = ''
 
                     try:
                         row.cells[5].text = str(chip.module[0])
@@ -231,10 +231,10 @@ def export_to_word():
                         row.cells[5].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.CENTER
                         chip.quantity = ''
 
-                    if chip.name != [] or chip.desig != [] or \
+                    if chip.name != [] or chip.designator != [] or \
                             (isinstance(chip.quantity, list) and chip.quantity != []) or \
                             (isinstance(chip.module, list) and chip.module != []) or \
-                            (isinstance(chip.man, list) and chip.man != []):
+                            (isinstance(chip.manuf, list) and chip.manuf != []):
                         try:
                             row = next(rows)
                         except StopIteration:

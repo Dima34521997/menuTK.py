@@ -63,8 +63,9 @@ def export_to_word():
     try:
         for char in sorted(dict_chars.keys()):
             for component_index, component in enumerate(dict_chars[char]):
-                component.split_name(shift_threshold=56)
-                component.split_desig(shift_treshold=53)
+                component.split_name(shift_threshold=52)
+                component.split_designators(shift_threshold=53)
+                component.split_notice(shift_threshold=120)
 
                 # Вставка наименования категории компонентов
                 if component_index == 0:
@@ -80,9 +81,9 @@ def export_to_word():
                         row_index = 1
 
                     rows_len = len(table.rows) - 1
-                    if row_index + len(component.name) > rows_len or row_index + len(component.desig) > rows_len \
+                    if row_index + len(component.name) > rows_len or row_index + len(component.designator) > rows_len \
                             or (isinstance(component.quantity, list) and row_index + len(component.quantity) > rows_len) or \
-                            (isinstance(component.man, list) and row_index + len(component.man) > rows_len):
+                            (isinstance(component.manuf, list) and row_index + len(component.manuf) > rows_len):
                         table = next(tables)
                         rows = iter(table.rows)
                         next(rows)
@@ -124,10 +125,10 @@ def export_to_word():
 
                 # Вставка строки в документ и ее оформление
                 rows_len = len(table.rows) - 1
-                if row_index + len(component.name) - 1 > rows_len or row_index + len(component.desig) - 1 > rows_len \
+                if row_index + len(component.name) - 1 > rows_len or row_index + len(component.designator) - 1 > rows_len \
                         or (
                         isinstance(component.quantity, list) and row_index + len(component.quantity) - 1 > rows_len) or \
-                        (isinstance(component.man, list) and row_index + len(component.man) - 1 > rows_len):
+                        (isinstance(component.manuf, list) and row_index + len(component.manuf) - 1 > rows_len):
                     table = next(tables)
                     rows = iter(table.rows)
                     next(rows)
@@ -138,36 +139,46 @@ def export_to_word():
                 row.cells[2].text = str(component.quantity)
                 row.cells[2].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.CENTER
 
-                row.cells[3].text = component.prim
+                row.cells[3].text = component.notice
                 row.cells[3].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.LEFT
 
+                # Вставка примечаний построчно
                 while True:
+                    # Вставляем десиг, наименование, кол-во и примечание по одной строке
                     try:
-                        row.cells[0].text = str(component.desig[0])
+                        row.cells[0].text = str(component.designator[0])
                         row.cells[0].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.CENTER
-
-                        del component.desig[0]
+                        del component.designator[0]
                     except IndexError:
                         pass
 
                     try:
                         row.cells[1].text = str(component.name[0])
                         row.cells[1].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.LEFT
-
                         del component.name[0]
                     except IndexError:
                         pass
 
-                    if (char == 'C' or char == 'R') and component.man.find("ТУ", 0) == -1:
-                        try:
-                            row.cells[3].text = str(component.manpnb)
-                            row.cells[3].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.CENTER
+                    # --- Вставка примечания построчно ---
+                    try:
+                        row.cells[3].text = str(component.notice[0])
+                        row.cells[3].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.LEFT
+                        del component.notice[0]
+                    except IndexError:
+                        row.cells[3].text = ""
+                    # ---
 
-                            del component.name[0]
+                    # Для компонентов R и C — вставка man_part_num отдельно
+                    if (char == 'C' or char == 'R') and component.manuf.find("ТУ", 0) == -1:
+                        try:
+                            row.cells[3].text = str(component.man_part_num)
+                            row.cells[3].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.CENTER
+                            del component.name[0]  # Удаляем запятую после man_part_num
                         except IndexError:
                             pass
 
-                    if component.name != [] or component.desig != []:
+                    # Переход к следующей строке, если остались данные
+                    if component.name != [] or component.designator != [] or component.notice != []:
                         try:
                             row = next(rows)
                             row_index += 1
@@ -176,12 +187,9 @@ def export_to_word():
                             rows = iter(table.rows)
                             next(rows)
                             row = next(rows)
-                            start_row = True
-
                             row_index = 1
                     else:
                         break
-
                 try:
                     row = next(rows)
                     row_index += 1
@@ -193,6 +201,7 @@ def export_to_word():
                     start_row = True
 
                     row_index = 1
+
     except StopIteration:
         pass
 

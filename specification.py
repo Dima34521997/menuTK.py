@@ -247,7 +247,7 @@ def export_to_word():
             for chip_index, chip in enumerate(dict_chars[char]):
                 chip_pos += 1
                 chip.split_name(shift_threshold=32)
-                chip.split_desig(shift_treshold=59)
+                chip.split_designators(shift_threshold=59)
 
                 if chip_index == 0:
                     try:
@@ -262,9 +262,9 @@ def export_to_word():
                         row_index = 1
 
                     rows_len = len(table.rows) - 1
-                    if row_index + len(chip.name) > rows_len or row_index + len(chip.desig) > rows_len \
+                    if row_index + len(chip.name) > rows_len or row_index + len(chip.designator) > rows_len \
                             or (isinstance(chip.quantity, list) and row_index + len(chip.quantity) > rows_len) or \
-                            (isinstance(chip.man, list) and row_index + len(chip.man) > rows_len):
+                            (isinstance(chip.manuf, list) and row_index + len(chip.manuf) > rows_len):
                         table = next(tables)
                         rows = iter(table.rows)
                         next(rows)
@@ -306,9 +306,9 @@ def export_to_word():
 
                 # Вставка строки в документ и ее оформление
                 rows_len = len(table.rows) - 1
-                if row_index + len(chip.name) - 1 > rows_len or row_index + len(chip.desig) - 1 > rows_len \
+                if row_index + len(chip.name) - 1 > rows_len or row_index + len(chip.designator) - 1 > rows_len \
                         or (isinstance(chip.quantity, list) and row_index + len(chip.quantity) - 1 > rows_len) or \
-                        (isinstance(chip.man, list) and row_index + len(chip.man) - 1 > rows_len):
+                        (isinstance(chip.manuf, list) and row_index + len(chip.manuf) - 1 > rows_len):
                     table = next(tables)
                     rows = iter(table.rows)
                     next(rows)
@@ -324,10 +324,10 @@ def export_to_word():
 
                 while True:
                     try:
-                        row.cells[6].text = str(chip.desig[0])
+                        row.cells[6].text = str(chip.designator[0])
                         row.cells[6].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.LEFT
 
-                        del chip.desig[0]
+                        del chip.designator[0]
                     except IndexError:
                         pass
 
@@ -339,7 +339,7 @@ def export_to_word():
                     except IndexError:
                         pass
 
-                    if chip.name != [] or chip.desig != []:
+                    if chip.name != [] or chip.designator != []:
                         try:
                             row = next(rows)
                             row_index += 1

@@ -76,24 +76,24 @@ cat_names_singular = {'A': "Устройство",
                       'X': "Разъем",
                       'Z': "Фильтр",
                       'ZQ': "Фильтр кварцевый",
-                      'U': "Оптопара"}  # Список наименованый групп компонентов в ед ч.
+                      'U': "Оптопара"}  # Список наименований групп компонентов в ед ч.
 
 class Element:
     def __init__(self, ser: pd.Series = None):
         if ser is not None:
             self.ser = ser
-            self.desig = ser['Designator']
-            self.char = self.desig[0]
+            self.designator = ser['Designator']
+            self.char = self.designator[0]
             self.rem = ser['Rem']
             self.body = ser['Корпус']
             self.tke = ser['TKE']
-            self.val = ser['Value']
-            self.tol = ser['Tolerance']
+            self.value = ser['Value']
+            self.tolerance = ser['Tolerance']
             self.pv = ser['Power/Voltage']
-            self.man = ser['Manufacturer'].split(',')[0]
-            self.manpnb = ser['ManufacturerPartNumber']
+            self.manuf = ser['Manufacturer'].split(',')[0]
+            self.man_part_num = ser['ManufacturerPartNumber']
             self.quantity = ser['Quantity']
-            self.prim = ser['Примечание']
+            self.notice = ser['Примечание']
             self.module = ""
 
             self.name = self._make_name()
@@ -115,59 +115,59 @@ class Element:
 
     def _make_name(self):
         # Для R и C Номинал и Погрешность переносятся вместе, поэтому сохраняем их в одну строку
-        val_tol = self.val + " " + self.tol
+        val_tol = self.value + " " + self.tolerance
         name = ''
 
         # Формирование наименований
         if self.char == 'C':
-            if self.man.find("ТУ", 0) != -1:
+            if self.manuf.find("ТУ", 0) != -1:
                 if self.tke != '':
-                    name = f"{self.rem} {self.pv} - {val_tol} - {self.tke} {self.man}"
+                    name = f"{self.rem} {self.pv} - {val_tol} - {self.tke} {self.manuf}"
                 else:
-                    name = f"{self.rem} {self.pv} - {val_tol} {self.man}"
+                    name = f"{self.rem} {self.pv} - {val_tol} {self.manuf}"
             else:
                 if self.tke != '':
-                    name = f"{self.rem} {self.body} {self.tke}  - {self.pv} - {val_tol}, {self.man}"
+                    name = f"{self.rem} {self.body} {self.tke}  - {self.pv} - {val_tol}, {self.manuf}"
                 else:
-                    name = f"{self.rem} {self.body} - {self.pv} - {val_tol}, {self.man}"
+                    name = f"{self.rem} {self.body} - {self.pv} - {val_tol}, {self.manuf}"
         if self.char == 'R':
-            if self.man.find("ТУ", 0) != -1:
+            if self.manuf.find("ТУ", 0) != -1:
                 if self.tke != '':
-                    name = f"{self.rem} - {self.pv} - {val_tol} - {self.tke} {self.man}"
+                    name = f"{self.rem} - {self.pv} - {val_tol} - {self.tke} {self.manuf}"
                 else:
-                    name = f"{self.rem} - {self.pv} - {val_tol} {self.man}"
+                    name = f"{self.rem} - {self.pv} - {val_tol} {self.manuf}"
             else:
-                name = f"{self.rem} {self.body} - {val_tol}, {self.man}"
+                name = f"{self.rem} {self.body} - {val_tol}, {self.manuf}"
         # Для прочих компонентов
         if self.char != 'C' and self.char != 'R':
-            if self.man.find("ТУ", 0) != -1:
-                name = f"{self.manpnb} {self.man}"
+            if self.manuf.find("ТУ", 0) != -1:
+                name = f"{self.man_part_num} {self.manuf}"
             else:
-                name = f"{self.manpnb}, {self.man}"
-            if self.manpnb == '':
-                if self.man.find("ТУ", 0) != -1:
-                    name = f"{self.val} {self.man}"
+                name = f"{self.man_part_num}, {self.manuf}"
+            if self.man_part_num == '':
+                if self.manuf.find("ТУ", 0) != -1:
+                    name = f"{self.value} {self.manuf}"
                 else:
-                    name = f"{self.val}, {self.man}"
+                    name = f"{self.value}, {self.manuf}"
         return name
 
-    def split_desig(self, shift_treshold: int):
+    def split_designators(self, shift_threshold: int):
         """
         Переносит позиции элементов, если те не влезают в строку шаблона
 
-        :param shift_treshold: Порог количества символов для переноса
+        :param shift_threshold: Порог количества символов для переноса
         :return: Лист позиций. Каждый новый элемент на новой строке
         """
-        #shift_treshold = 53
-        splitted_desig = self.desig.split(", ")
+        #shift_threshold = 53
+        splitted_desig = self.designator.split(", ")
         for i in range(len(splitted_desig)):
             next_i = i + 1
             # Проверка существования следующей позиции
             if next_i >= len(splitted_desig):
                 break
-            # Пока длина позиций не привышает порог, добавляем следующую позицию
+            # Пока длина позиций не превышает порог, добавляем следующую позицию
             # -2 для вставки запятой в конце строки
-            while font.getlength(splitted_desig[i] + ", " + splitted_desig[next_i]) <= shift_treshold - 2:
+            while font.getlength(splitted_desig[i] + ", " + splitted_desig[next_i]) <= shift_threshold - 2:
                 splitted_desig[i] += ", " + splitted_desig[next_i]
                 # Удаляем добавленную позицию из списка всех позиций
                 splitted_desig.remove(splitted_desig[next_i])
@@ -179,14 +179,14 @@ class Element:
             if next_i < len(splitted_desig):
                 splitted_desig[i] += ","
 
-        self.desig = splitted_desig
+        self.designator = splitted_desig
 
     def split_name(self, shift_threshold, cat_name='', one_man=''):
-        val_tol = self.val + " " + self.tol
+        val_tol = self.value + " " + self.tolerance
         splitted_name = []
 
-        if self.man.find("ТУ", 0) != -1 and self.manpnb != "":
-            new_split = self.manpnb.split()
+        if self.manuf.find("ТУ", 0) != -1 and self.man_part_num != "":
+            new_split = self.man_part_num.split()
 
             i = 0
             while i + 1 < len(new_split):
@@ -201,39 +201,39 @@ class Element:
                         break
                 else:
                     i += 1
-            splitted_name = new_split + [f"{self.man}"]
+            splitted_name = new_split + [f"{self.manuf}"]
         elif self.char == 'C':
-            if self.man.find("ТУ", 0) != -1 or (self.name is list and self.name.find("ТУ", 0) != -1):
+            if self.manuf.find("ТУ", 0) != -1 or (self.name is list and self.name.find("ТУ", 0) != -1):
                 if self.tke != '':
                     splitted_name = [f"{self.rem}", f"{self.pv} -", f"{val_tol} -", f"{self.tke}",
-                                     f"{self.man}"]
+                                     f"{self.manuf}"]
                 else:
-                    splitted_name = [f"{self.rem}", f"{self.pv} -", f"{val_tol}", f"{self.man}"]
+                    splitted_name = [f"{self.rem}", f"{self.pv} -", f"{val_tol}", f"{self.manuf}"]
             else:
                 if self.tke != '':
                     splitted_name = [f"{self.rem}", f"{self.body}", f"{self.tke} -", f"{self.pv} -", f"{val_tol},",
-                                     f"{self.man}"]
+                                     f"{self.manuf}"]
                 else:
-                    splitted_name = [f"{self.rem}", f"{self.body} -", f"{self.pv} -", f"{val_tol},", f"{self.man}"]
+                    splitted_name = [f"{self.rem}", f"{self.body} -", f"{self.pv} -", f"{val_tol},", f"{self.manuf}"]
         elif self.char == 'R':
-            if self.man.find("ТУ", 0) != -1 or (self.name is list and self.name.find("ТУ", 0) != -1):
+            if self.manuf.find("ТУ", 0) != -1 or (self.name is list and self.name.find("ТУ", 0) != -1):
                 if self.tke != '':
-                    splitted_name = [f"{self.rem} -", f"{self.pv} -", f"{val_tol} -", f"{self.tke}", f"{self.man}"]
+                    splitted_name = [f"{self.rem} -", f"{self.pv} -", f"{val_tol} -", f"{self.tke}", f"{self.manuf}"]
                 else:
-                    splitted_name = [f"{self.rem} -", f"{self.pv} -", f"{val_tol} -", f"{self.man}"]
+                    splitted_name = [f"{self.rem} -", f"{self.pv} -", f"{val_tol} -", f"{self.manuf}"]
             else:
-                splitted_name = [f"{self.rem}", f"{self.body} -", f"{val_tol},", f"{self.man}"]
+                splitted_name = [f"{self.rem}", f"{self.body} -", f"{val_tol},", f"{self.manuf}"]
         # Для прочих компонентов
         elif self.char != 'C' and self.char != 'R':
-            if self.man.find("ТУ", 0) != -1:
-                splitted_name = [f"{self.manpnb}", f"{self.man}"]
+            if self.manuf.find("ТУ", 0) != -1:
+                splitted_name = [f"{self.man_part_num}", f"{self.manuf}"]
             else:
-                splitted_name = [f"{self.manpnb},", f"{self.man}"]
-            if self.manpnb == '':
-                if self.man.find("ТУ", 0) != -1:
-                    splitted_name = [f"{self.val}", f"{self.man}"]
+                splitted_name = [f"{self.man_part_num},", f"{self.manuf}"]
+            if self.man_part_num == '':
+                if self.manuf.find("ТУ", 0) != -1:
+                    splitted_name = [f"{self.value}", f"{self.manuf}"]
                 else:
-                    splitted_name = [f"{self.val},", f"{self.man}"]
+                    splitted_name = [f"{self.value},", f"{self.manuf}"]
 
         if cat_name != '':
             splitted_name.insert(0, cat_name)
@@ -255,16 +255,16 @@ class Element:
 
         for index, name_part in enumerate(name):
             name[index] = name[index].lstrip().rstrip()
-            if self.man == '':
+            if self.manuf == '':
                 name[index] = name[index][:-1]
 
         self.name = name
 
     def split_man(self, shift_threshold):
-        if self.man != '':
+        if self.manuf != '':
             i = 0
             new_man = ['']
-            for man_part in self.man.split():
+            for man_part in self.manuf.split():
                 # Если длина итоговой строки длиннее порога, то создаем новый перенос
                 if len(f"{new_man[-1]} {man_part}") > shift_threshold:
                     if new_man[-1][-1] == '-':
@@ -273,7 +273,43 @@ class Element:
                     i += 1
                     continue
                 new_man[i] += f" {man_part}"
-            self.man = new_man
+            self.manuf = new_man
+
+    def split_notice(self, shift_threshold):
+        """
+        Разбивает текст примечания на строки, не превышающие заданную ширину в пикселях
+        :param shift_threshold: Максимальная ширина строки в пикселях
+        """
+        if not self.notice or not self.notice.strip():
+            self.notice = []
+            return
+
+        words = self.notice.split()
+        result = []
+        current_line = ""
+
+        for word in words:
+            # Формируем новую строку
+            if current_line == "":
+                test_line = word
+            else:
+                test_line = current_line + " " + word
+
+            # Проверяем ширину в пикселях
+            if font.getlength(test_line) <= shift_threshold:
+                current_line = test_line
+            else:
+                if current_line:
+                    result.append(current_line)
+                current_line = word  # начинаем новую строку с текущего слова
+
+        # Добавляем последнюю строку
+        if current_line:
+            result.append(current_line)
+
+        self.notice = result
+
+
 
 def create_name(df: pd.DataFrame, index: int, shift_treshold: int):
     """
@@ -424,13 +460,13 @@ def create_name(df: pd.DataFrame, index: int, shift_treshold: int):
     return [name, name2, name3]
 
 
-def create_names_vp(df: pd.DataFrame, index: int, shift_treshold: int):
+def create_names_vp(df: pd.DataFrame, index: int, shift_threshold: int):
     """
     Формирует наименование компонента и переносит его, если тот не будет влезат в рамки шаблона
 
     :param df: Словарь с сортированными по обозначениям компонентами
     :param index: Индекс редактирумеого элемента
-    :param shift_treshold: Порог длины строки, привышая который будет производиться перенос наимнования
+    :param shift_threshold: Порог длины строки, превышая который будет производиться перенос наимнования
     :return: Готовое наименование элемента, [name2, name3] - переносы
     """
     desig = df['Designator'][index]
@@ -460,38 +496,38 @@ def create_names_vp(df: pd.DataFrame, index: int, shift_treshold: int):
                 # Костыль для некоторых корпусов
                 if '0' not in body and 'М' not in body:
                     body = ''
-                if len(f"{rem} {body} - {pv}") > shift_treshold:
+                if len(f"{rem} {body} - {pv}") > shift_threshold:
                     name = f"{rem} {body} -"
                     name2 = f"- {pv} - {val_tol} - {tke}"
-                elif len(f"{rem} {body} - {pv} - {val_tol}") > shift_treshold:
+                elif len(f"{rem} {body} - {pv} - {val_tol}") > shift_threshold:
                     name = f"{rem} {body} - {pv} -"
                     name2 = f"- {val_tol} - {tke}"
-                elif len(f"{rem} {body} - {pv} - {val_tol} - {tke}") > shift_treshold:
+                elif len(f"{rem} {body} - {pv} - {val_tol} - {tke}") > shift_threshold:
                     name = f"{rem} {body} - {pv} - {val_tol} -"
                     name2 = f"- {tke}"
                 else:
                     name = f"{rem} {body} - {pv} - {val_tol} - {tke}"
             else:
-                if len(f"{rem} {body} - {pv}") > shift_treshold:
+                if len(f"{rem} {body} - {pv}") > shift_threshold:
                     name = f"{rem} {body} -"
                     name2 = f"- {pv} - {val_tol}"
-                elif len(f"{rem} {body} - {pv} - {val_tol}") > shift_treshold:
+                elif len(f"{rem} {body} - {pv} - {val_tol}") > shift_threshold:
                     name = f"{rem} {body} - {pv} -"
                     name2 = f"- {val_tol}"
                 else:
                     name = f"{rem} {body} - {pv} - {val_tol}"
         else:
             if tke != '':
-                if len(f"{rem} {body} {tke} - {pv}") > shift_treshold:
+                if len(f"{rem} {body} {tke} - {pv}") > shift_threshold:
                     name = f"{rem} {body} {tke} -"
                     name2 = f"- {pv} - {val_tol}"
-                elif len(f"{rem} {body} {tke} - {pv} - {val_tol}") > shift_treshold:
+                elif len(f"{rem} {body} {tke} - {pv} - {val_tol}") > shift_threshold:
                     name = f"{rem} {body} {tke}  - {pv} -"
                     name2 = f"- {val_tol}"
                 else:
                     name = f"{rem} {body} {tke}  - {pv} - {val_tol}"
             else:
-                if len(f"{rem} {body} - {pv} - {val_tol}") > shift_treshold:
+                if len(f"{rem} {body} - {pv} - {val_tol}") > shift_threshold:
                     name = f"{rem} {body} - {pv} -"
                     name2 = f"- {val_tol}"
                 else:
@@ -499,28 +535,28 @@ def create_names_vp(df: pd.DataFrame, index: int, shift_treshold: int):
     elif desig.find("R", 0) != -1:
         if man.find("ТУ", 0) != -1:
             if tke != '':
-                if len(f"{rem} - {pv} - {val_tol}") > shift_treshold:
+                if len(f"{rem} - {pv} - {val_tol}") > shift_threshold:
                     name = f"{rem} - {pv} -"
                     name2 = f"- {val_tol} - {tke}"
-                elif len(f"{rem} - {pv} - {val_tol} - {tke}") > shift_treshold:
+                elif len(f"{rem} - {pv} - {val_tol} - {tke}") > shift_threshold:
                     name = f"{rem} - {pv} - {val_tol} -"
                     name2 = f"- {tke}"
                 else:
                     name = f"{rem} - {pv} - {val_tol} - {tke}"
             else:
-                if len(f"{rem} - {pv} - {val_tol}") > shift_treshold:
+                if len(f"{rem} - {pv} - {val_tol}") > shift_threshold:
                     name = f"{rem} - {pv} -"
                     name2 = f"- {val_tol} - {tke}"
-                elif len(f"{rem} - {pv} - {val_tol} {tke}") > shift_treshold:
+                elif len(f"{rem} - {pv} - {val_tol} {tke}") > shift_threshold:
                     name = f"{rem} - {pv} - {val_tol}"
                     name2 = f"- {tke}"
                 else:
                     name = f"{rem} - {pv} - {val_tol} - {tke}"
         else:
-            if len(f"{rem} {body}") > shift_treshold:
+            if len(f"{rem} {body}") > shift_threshold:
                 name = f"{rem} {body}"
                 name2 = f"- {val_tol}"
-            elif len(f"{rem} {body} - {val_tol}") > shift_treshold:
+            elif len(f"{rem} {body} - {val_tol}") > shift_threshold:
                 name = f"{rem} {body} -"
                 name2 = f"- {val_tol}"
             else:

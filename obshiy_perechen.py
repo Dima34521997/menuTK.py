@@ -98,39 +98,39 @@ def get_components(dict_chars: dict, dfs: list, files: list):
                 component = ed.Element(df.iloc[df_index])
                 component.module = module
 
-                if '*' in component.desig:
+                if '*' in component.designator:
                     if 'Регулирование' not in prim_cats.values():
                         prim_cats['*' * (len(prim_cats) + 1)] = 'Регулирование'
 
-                if component.desig.find(char, 0) == 0:
+                if component.designator.find(char, 0) == 0:
                     component = add_value_char(component, char)
                     # Пропускаем компоненты с примечанием "Выполнен на плате"
-                    if component.prim.find("Выполнен на плате", 0) != -1:
+                    if component.notice.find("Выполнен на плате", 0) != -1:
                         df_index += 1
                         continue
 
-                    if any(letter in component.desig for letter in string.ascii_uppercase) is False:
+                    if any(letter in component.designator for letter in string.ascii_uppercase) is False:
                         df_index += 1
                         continue
 
                     # Уведомления о пустых полях
-                    if component.man == "":
-                        errors.append(f"Не заполнен производитель у элемента {component.desig}")
+                    if component.manuf == "":
+                        errors.append(f"Не заполнен производитель у элемента {component.designator}")
 
-                    if component.desig.find("С", 0) != -1:
+                    if component.designator.find("С", 0) != -1:
                         if component.pv == "":
-                            errors.append(f"Не заполнена мощность у элемента {component.desig}")
+                            errors.append(f"Не заполнена мощность у элемента {component.designator}")
 
                     if component.char == 'C' or component.char == 'C':
                         # У отчеки нет Rem
-                        if component.rem == "" and component.man.find("ТУ", 0) == -1:
-                            errors.append(f"Не заполнен Rem у элемента {component.desig}")
-                        if component.val == "":
-                            errors.append(f"Не заполнен номинал у элемента {component.desig}")
+                        if component.rem == "" and component.manuf.find("ТУ", 0) == -1:
+                            errors.append(f"Не заполнен Rem у элемента {component.designator}")
+                        if component.value == "":
+                            errors.append(f"Не заполнен номинал у элемента {component.designator}")
                         if component.body == "":
-                            errors.append(f"Не заполнен корпус у элемента {component.desig}")
-                        if component.tol == "":
-                            errors.append(f"Не заполнена погрешность у элемента {component.desig}")
+                            errors.append(f"Не заполнен корпус у элемента {component.designator}")
+                        if component.tolerance == "":
+                            errors.append(f"Не заполнена погрешность у элемента {component.designator}")
 
                     add_to_prim(component, char)
                     component, df_index = combine_following_chips(component, df, df_index)
@@ -152,22 +152,22 @@ def get_components(dict_chars: dict, dfs: list, files: list):
                 except StopIteration:
                     break
 
-                if dict_chars[char][0].man != next_component.man:
+                if dict_chars[char][0].manuf != next_component.manuf:
                     common_manufacture = False
                     break
         if common_manufacture and len(dict_chars[char]) > 0:
             # Проверяем, что есть хотя бы один элемент
-            common_manufacturer = dict_chars[char][0].man
+            common_manufacturer = dict_chars[char][0].manuf
             components_one_manuf_categories[char] = common_manufacturer
             for i, component in enumerate(dict_chars[char]):
-                component.man = ''
+                component.manuf = ''
 
         if no_perechen:
             if char == 'R' or char == 'C':
-                dict_chars[char] = sorted(dict_chars[char], key=lambda x: [x.desig, x.rem, x.body, x.pv, x.tol,
-                                                                           x.val, x.module])
+                dict_chars[char] = sorted(dict_chars[char], key=lambda x: [x.designator, x.rem, x.body, x.pv, x.tolerance,
+                                                                           x.value, x.module])
             else:
-                dict_chars[char] = sorted(dict_chars[char], key=lambda x: [x.manpnb, x.module])
+                dict_chars[char] = sorted(dict_chars[char], key=lambda x: [x.man_part_num, x.module])
 
     if len(errors) != 0:
         print("\n*** *** ***\n"
@@ -180,14 +180,14 @@ def get_components(dict_chars: dict, dfs: list, files: list):
 
 def add_to_prim(chip: ed.Element, char):
     global prim_not_install
-    if chip.prim != '' and "*" not in chip.prim:
-        if chip.prim == 'Не устанавливать':
+    if chip.notice != '' and "*" not in chip.notice:
+        if chip.notice == 'Не устанавливать':
             if 'Не устанавливать' not in prim_cats.values():
                 prim_cats['*' * (len(prim_cats) + 1)] = 'Не устанавливать'
             if char not in prim_not_install.keys():
                 prim_not_install[char] = []
-            if chip.desig not in prim_not_install[char]:
-                prim_not_install[char].append(chip.desig)
+            if chip.designator not in prim_not_install[char]:
+                prim_not_install[char].append(chip.designator)
 
 
 def combine_chips_in_module(d_chars: dict):
@@ -211,11 +211,11 @@ def combine_chips_in_module(d_chars: dict):
                 if chip.rem == d_chars[char][char_df_index].rem \
                         and chip.body == d_chars[char][char_df_index].body \
                         and chip.pv == d_chars[char][char_df_index].pv \
-                        and chip.tol == d_chars[char][char_df_index].tol \
-                        and chip.val == d_chars[char][char_df_index].val \
+                        and chip.tolerance == d_chars[char][char_df_index].tolerance \
+                        and chip.value == d_chars[char][char_df_index].value \
                         and chip.tke == d_chars[char][char_df_index].tke \
-                        and chip.man == d_chars[char][char_df_index].man \
-                        and chip.manpnb == d_chars[char][char_df_index].manpnb \
+                        and chip.manuf == d_chars[char][char_df_index].manuf \
+                        and chip.man_part_num == d_chars[char][char_df_index].man_part_num \
                         and chip.module == d_chars[char][char_df_index].module:
                     # Складываем имеющиеся кол-во с тем, что у компонента
                     d_chars[char][char_df_index].quantity = \
@@ -224,8 +224,8 @@ def combine_chips_in_module(d_chars: dict):
 
                 # Добавление нового элемента, если тот не похож на имеющийся
                 if same != 0:
-                    d_chars[char][char_df_index].desig = \
-                        d_chars[char][char_df_index].desig + ", " + chip.desig
+                    d_chars[char][char_df_index].designator = \
+                        d_chars[char][char_df_index].designator + ", " + chip.designator
                     del d_chars[char][edit_index]
                     edit_index -= 1
 
@@ -234,10 +234,10 @@ def combine_chips_in_module(d_chars: dict):
 
         if no_perechen == 1:
             if char == 'R' or char == 'C':
-                d_chars[char] = sorted(d_chars[char], key=lambda x: [x.rem, x.body, x.pv, x.tol,
-                                                                     convert_to_simple_value_for_sort(x.val), x.module])
+                d_chars[char] = sorted(d_chars[char], key=lambda x: [x.rem, x.body, x.pv, x.tolerance,
+                                                                     convert_to_simple_value_for_sort(x.value), x.module])
             else:
-                d_chars[char] = sorted(d_chars[char], key=lambda x: [x.manpnb, x.module])
+                d_chars[char] = sorted(d_chars[char], key=lambda x: [x.man_part_num, x.module])
 
     return d_chars
 
@@ -251,27 +251,27 @@ def combine_following_chips(component: ed.Element, df: pd.DataFrame, df_index: i
             return component, df_index
         next_component = ed.Element(df.iloc[df_index])
         next_component = add_value_char(next_component, next_component.char)
-        if all((next_component.body == component.body, next_component.val == component.val,
+        if all((next_component.body == component.body, next_component.value == component.value,
                 next_component.tke == component.tke, next_component.pv == component.pv,
-                next_component.tol == component.tol, next_component.man == component.man,
-                next_component.manpnb == component.manpnb, next_component.module != component.module)):
+                next_component.tolerance == component.tolerance, next_component.manuf == component.manuf,
+                next_component.man_part_num == component.man_part_num, next_component.module != component.module)):
             pass
         else:
             break
         # Складываем имеющиеся кол-во с тем, что у компонента
         component.quantity = component.quantity + next_component.quantity
-        next_desig = next_component.desig
+        next_desig = next_component.designator
         add_to_prim(next_component, next_component.char)
         same += 1
 
     # Добавление нового элемента, если тот не похож на имеющийся
     if same == 1:
         df_index -= 1
-        component.desig = f"{component.desig}, {next_desig}"
+        component.designator = f"{component.designator}, {next_desig}"
     if same > 1:
         if df_index + 1 < len(df.index):
             df_index -= 1
-        component.desig = f"{component.desig}-{next_desig}"
+        component.designator = f"{component.designator}-{next_desig}"
     if same != 0:
         df_index += 1
     return component, df_index
@@ -285,30 +285,30 @@ def add_value_char(chip: ed.Element, char: str):
     :return:
     """
 
-    if chip.man.find("ТУ") != - 1 and chip.man[0:-3].find(" ") != -1:
-        chip.man = chip.man[0:-3].replace(" ", "") + " ТУ"
+    if chip.manuf.find("ТУ") != - 1 and chip.manuf[0:-3].find(" ") != -1:
+        chip.manuf = chip.manuf[0:-3].replace(" ", "") + " ТУ"
     else:
-        chip.man = chip.man.split(",")[0]
-    if chip.man.find("ТУ") != - 1 and chip.man[0:-3].find(" ") != -1:
+        chip.manuf = chip.manuf.split(",")[0]
+    if chip.manuf.find("ТУ") != - 1 and chip.manuf[0:-3].find(" ") != -1:
         if char == 'C':
-            print("В поле элемента " + chip.desig +
+            print("В поле элемента " + chip.designator +
                   " в модуле " + chip.module + " обнаружен пробел в ТУ")
-        chip.man = chip.man[0:-3].replace(" ", "") + " ТУ"
+        chip.manuf = chip.manuf[0:-3].replace(" ", "") + " ТУ"
     if char == 'C':
-        if chip.val.find("Ф") == -1:
-            if chip.val.find(" ") == -1:
-                chip.val += ' '
-            chip.val += 'Ф'
+        if chip.value.find("Ф") == -1:
+            if chip.value.find(" ") == -1:
+                chip.value += ' '
+            chip.value += 'Ф'
     if char == 'R':
-        if chip.val.find("Ом") == -1:
-            if chip.val.find(" ") == -1:
-                chip.val += ' '
-            chip.val += 'Ом'
+        if chip.value.find("Ом") == -1:
+            if chip.value.find(" ") == -1:
+                chip.value += ' '
+            chip.value += 'Ом'
     if char == 'L':
-        if chip.val.find("Гн") == -1:
-            if chip.val.find(" ") == -1:
-                chip.val += ' '
-            chip.val += 'Гн'
+        if chip.value.find("Гн") == -1:
+            if chip.value.find(" ") == -1:
+                chip.value += ' '
+            chip.value += 'Гн'
     return chip
 
 
@@ -318,19 +318,19 @@ def split_to_regul(d_chars: dict):
         while d_chars_index < len(d_chars[char]):
             chip = d_chars[char][d_chars_index]
 
-            if chip.val == '':
+            if chip.value == '':
                 d_chars_index += 1
                 continue
-            splited_values = chip.val.split(", ")
+            splited_values = chip.value.split(", ")
             if len(splited_values) != 1:
                 for ind, value in enumerate(splited_values):
                     if ind == 0:
-                        d_chars[char][d_chars_index].val = add_value_char(d_chars[char][d_chars_index], char).val
-                        d_chars[char][d_chars_index].prim = '*'
+                        d_chars[char][d_chars_index].value = add_value_char(d_chars[char][d_chars_index], char).value
+                        d_chars[char][d_chars_index].notice = '*'
                     else:
                         line = copy.copy(chip)
-                        line.val = value
-                        line.prim = '*'
+                        line.value = value
+                        line.notice = '*'
                         line = add_value_char(line, line.char)
                         d_chars[char].insert(d_chars_index + 1, line)
 
@@ -353,12 +353,12 @@ def combine_modules(d_chars: dict):
                 next_chip = d_chars[char][i]
                 if chip.rem == next_chip.rem and \
                         chip.body == next_chip.body and \
-                        chip.val == next_chip.val and \
+                        chip.value == next_chip.value and \
                         chip.tke == next_chip.tke and \
                         chip.pv == next_chip.pv and \
-                        chip.tol == next_chip.tol and \
-                        chip.man == next_chip.man and \
-                        chip.manpnb == next_chip.manpnb and \
+                        chip.tolerance == next_chip.tolerance and \
+                        chip.manuf == next_chip.manuf and \
+                        chip.man_part_num == next_chip.man_part_num and \
                         ((chip.module != '' and next_chip.module != '')
                          and chip.module != next_chip.module):
                     new = False
@@ -380,10 +380,10 @@ def combine_modules(d_chars: dict):
 
         if no_perechen == 1:
             if char == 'R' or char == 'C':
-                d_chars[char] = sorted(d_chars[char], key=lambda x: [x.rem, x.body, x.pv, x.tol,
-                                                                     convert_to_simple_value_for_sort(x.val), x.module])
+                d_chars[char] = sorted(d_chars[char], key=lambda x: [x.rem, x.body, x.pv, x.tolerance,
+                                                                     convert_to_simple_value_for_sort(x.value), x.module])
             else:
-                d_chars[char] = sorted(d_chars[char], key=lambda x: [x.manpnb, x.module])
+                d_chars[char] = sorted(d_chars[char], key=lambda x: [x.man_part_num, x.module])
 
     return d_chars
 
