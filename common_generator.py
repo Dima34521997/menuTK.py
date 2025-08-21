@@ -1,12 +1,7 @@
 import copy
 import os
-import re
 import string
-
-import numpy
 import pandas as pd
-
-import editors
 import editors as ed
 
 # Программа для создания промежуточного перечня элементов, составленного из BOM'ом всех плат
@@ -22,10 +17,10 @@ pd.set_option('mode.chained_assignment', None)
 test = False
 
 
-def get_char(desig: str):
-    """Убирает из десигнатора циферные обозначения"""
+def get_designator_char(designator: str):
+    """Убирает из десигнатора цифирные обозначения"""
     new_char = ''
-    for c in desig:
+    for c in designator:
         if c.isalpha():
             new_char += c
     return new_char
@@ -51,7 +46,7 @@ def get_dfs(dict_chars: dict, files: list):
     # Достать все буквенные обозначения с листа
     for dataframe in dfs:
         for index, row in dataframe.iterrows():
-            char = get_char(row['Designator'])
+            char = get_designator_char(row['Designator'])
             if char == "":
                 continue
 
@@ -122,7 +117,7 @@ def get_components(dict_chars: dict, dfs: list, files: list):
                             errors.append(f"Не заполнена мощность у элемента {component.designator}")
 
                     if component.char == 'C' or component.char == 'C':
-                        # У отчеки нет Rem
+                        # У отечки нет Rem
                         if component.rem == "" and component.manuf.find("ТУ", 0) == -1:
                             errors.append(f"Не заполнен Rem у элемента {component.designator}")
                         if component.value == "":
@@ -279,7 +274,8 @@ def combine_following_chips(component: ed.Element, df: pd.DataFrame, df_index: i
 
 def add_value_char(chip: ed.Element, char: str):
     """
-    Добавляет буквенные обозначения к номиналу в соотвествии с видом компонента
+    Добавляет буквенные обозначения к номиналу в соответствии с видом компонента
+
     :param chip: Экземпляр компонента
     :param char: Буквенное обозначение компонента
     :return:

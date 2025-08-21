@@ -1,17 +1,24 @@
-import sys
 from PySide6.QtWidgets import (
-    QApplication, QWidget, QPushButton, QTextEdit, QVBoxLayout,
-    QHBoxLayout, QFileDialog, QLabel, QLineEdit, QCheckBox
+    QApplication,
+    QWidget,
+    QPushButton,
+    QVBoxLayout,
+    QHBoxLayout,
+    QFileDialog,
+    QLabel,
+    QLineEdit,
+    QCheckBox,
+    QTextBrowser,
 )
-from PySide6.QtCore import Qt
+from PySide6.QtGui import QDesktopServices
+from PySide6.QtCore import Qt, QUrl
+import sys
 import json
 import os
 
 # Мои импорты
-import perechen_elementov
-import specification
-import vedomost_pokupnih_izdeliy
-import ERI
+# перечень элементов, спецификация, ведомость покупная
+import PE, S, VP
 
 # Глобальные переменные
 files_to_open = []
@@ -47,10 +54,10 @@ except (FileNotFoundError, json.JSONDecodeError, UnicodeDecodeError):
 class UI(QWidget):
     def __init__(self):
         super().__init__()
-        self.initUI()
+        self.init_ui()
         self.load_data()
 
-    def initUI(self):
+    def init_ui(self):
         self.setWindowTitle("Генератор документов")
         self.resize(580, 520)
 
@@ -85,18 +92,18 @@ class UI(QWidget):
                 background-color: #467a63;
             }
 
-            QPushButton#btn_Perechen,
-            QPushButton#btn_Specefication,
+            QPushButton#btn_PE,
+            QPushButton#btn_S,
             QPushButton#btn_VP {
                 background-color: #548b9c;
             }
-            QPushButton#btn_Perechen:hover,
-            QPushButton#btn_Specefication:hover,
+            QPushButton#btn_PE:hover,
+            QPushButton#btn_S:hover,
             QPushButton#btn_VP:hover {
                 background-color: #4a7c8a;
             }
-            QPushButton#btn_Perechen:pressed,
-            QPushButton#btn_Specefication:pressed,
+            QPushButton#btn_PE:pressed,
+            QPushButton#btn_S:pressed,
             QPushButton#btn_VP:pressed {
                 background-color: #3e6a78;
             }
@@ -178,34 +185,37 @@ class UI(QWidget):
 
         # --- Кнопки управления файлами ---
         top_layout = QHBoxLayout()
-        self.btn_RemoveFiles = QPushButton("Очистить")
         self.btn_AddFile = QPushButton("Добавить файл/-ы")
+        self.btn_RemoveFiles = QPushButton("Очистить")
 
         self.btn_RemoveFiles.setObjectName("btn_RemoveFiles")
         self.btn_AddFile.setObjectName("btn_AddFile")
 
-        top_layout.addWidget(self.btn_RemoveFiles)
         top_layout.addWidget(self.btn_AddFile)
+        top_layout.addWidget(self.btn_RemoveFiles)
         main_layout.addLayout(top_layout)
 
-        # --- Список файлов ---
-        self.txt_FilesListView = QTextEdit()
-        self.txt_FilesListView.setReadOnly(False)
-        self.txt_FilesListView.setMaximumHeight(140)
+        # --- Список файлов (логи) ---
+        self.txt_FilesListView = QTextBrowser()
+        self.txt_FilesListView.setOpenExternalLinks(False)  # Отключаем автоматическое открытие
+        self.txt_FilesListView.setMaximumHeight(180)
         main_layout.addWidget(self.txt_FilesListView)
+
+        # Подключаем обработчик ссылок
+        self.txt_FilesListView.anchorClicked.connect(self.on_anchor_clicked)
 
         # --- Кнопки генерации ---
         button_layout = QHBoxLayout()
-        self.btn_Perechen = QPushButton("Перечень")
-        self.btn_Specefication = QPushButton("Спецификация")
+        self.btn_PE = QPushButton("Перечень")
+        self.btn_S = QPushButton("Спецификация")
         self.btn_VP = QPushButton("ВП")
 
-        self.btn_Perechen.setObjectName("btn_Perechen")
-        self.btn_Specefication.setObjectName("btn_Specefication")
+        self.btn_PE.setObjectName("btn_PE")
+        self.btn_S.setObjectName("btn_S")
         self.btn_VP.setObjectName("btn_VP")
 
-        button_layout.addWidget(self.btn_Perechen)
-        button_layout.addWidget(self.btn_Specefication)
+        button_layout.addWidget(self.btn_PE)
+        button_layout.addWidget(self.btn_S)
         button_layout.addWidget(self.btn_VP)
         main_layout.addLayout(button_layout)
 
@@ -228,7 +238,7 @@ class UI(QWidget):
         self.btn_SelectTemplate = QPushButton("Выбрать...")
         self.btn_SelectTemplate.setFixedSize(66, 36)
         self.btn_SelectTemplate.setProperty("flat", "true")
-        self.btn_SelectTemplate.clicked.connect(self.onSelectTemplateFolder)
+        self.btn_SelectTemplate.clicked.connect(self.on_select_template_folder)
         add_field(form_layout, "Путь к шаблонам", self.ent_Templates, self.btn_SelectTemplate)
 
         self.ent_Project = QLineEdit()
@@ -256,16 +266,22 @@ class UI(QWidget):
         # --- Подключение сигналов ---
         self.btn_AddFile.clicked.connect(self.onOpen)
         self.btn_RemoveFiles.clicked.connect(self.clearFiles)
-        self.btn_Perechen.clicked.connect(self.createPerechen)
-        self.btn_Specefication.clicked.connect(self.createSpecification)
-        self.btn_VP.clicked.connect(self.createVedomost)
+        self.btn_PE.clicked.connect(self.create_pe)
+        self.btn_S.clicked.connect(self.create_s)
+        self.btn_VP.clicked.connect(self.create_vp)
 
-        self.ent_Templates.textChanged.connect(self.onModified)
-        self.ent_Project.textChanged.connect(self.onModified)
-        self.ent_Razrab.textChanged.connect(self.onModified)
-        self.ent_Checked.textChanged.connect(self.onModified)
-        self.ent_Control.textChanged.connect(self.onModified)
-        self.ent_Utverdil.textChanged.connect(self.onModified)
+        self.ent_Templates.textChanged.connect(self.on_modified)
+        self.ent_Project.textChanged.connect(self.on_modified)
+        self.ent_Razrab.textChanged.connect(self.on_modified)
+        self.ent_Checked.textChanged.connect(self.on_modified)
+        self.ent_Control.textChanged.connect(self.on_modified)
+        self.ent_Utverdil.textChanged.connect(self.on_modified)
+
+    def on_anchor_clicked(self, url):
+        """Обработка клика по ссылке в логе"""
+        print(f"[LOG] Переход по ссылке: {url.toString()}")
+        QDesktopServices.openUrl(url)
+        self.txt_FilesListView.ensureCursorVisible()  # Убедимся, что видно последнюю строку
 
     def load_data(self):
         self.ent_Templates.setText(data.get("Templates_Path", ""))
@@ -275,7 +291,7 @@ class UI(QWidget):
         self.ent_Control.setText(data.get("N_control", ""))
         self.ent_Utverdil.setText(data.get("Utverdil", ""))
 
-    def onSelectTemplateFolder(self):
+    def on_select_template_folder(self):
         folder = QFileDialog.getExistingDirectory(self, "Выберите папку с шаблонами", self.ent_Templates.text())
         if folder:
             folder = os.path.normpath(folder)
@@ -283,7 +299,7 @@ class UI(QWidget):
             data['Templates_Path'] = folder
             self.save_profile()
 
-    def onModified(self):
+    def on_modified(self):
         data['Templates_Path'] = self.ent_Templates.text()
         data['Project_Name'] = self.ent_Project.text()
         data['Razrab'] = self.ent_Razrab.text()
@@ -308,44 +324,69 @@ class UI(QWidget):
             self.txt_FilesListView.clear()
             for file in files:
                 files_to_open.append(file)
-                self.txt_FilesListView.append(os.path.basename(file))
+                self.txt_FilesListView.insertHtml(f"{os.path.basename(file)}<br>")
+            self.txt_FilesListView.ensureCursorVisible()
 
     def clearFiles(self):
         files_to_open.clear()
         self.txt_FilesListView.clear()
 
     def log_error(self, message):
-        self.txt_FilesListView.append(f'<span style="color: red;">= {message}</span>')
+        html = f'<span style="color: red; font-size: 11pt;">{message}</span><br>'
+        self.txt_FilesListView.insertHtml(html)
+        self.txt_FilesListView.ensureCursorVisible()
 
     def log_success(self, message):
-        self.txt_FilesListView.append(f'<span style="color: green;"> {message}</span>')
+        html = f'<span style="color: green; font-size: 11pt;">{message}</span><br>'
+        self.txt_FilesListView.insertHtml(html)
+        self.txt_FilesListView.ensureCursorVisible()
 
-    def createPerechen(self):
+    def create_pe(self):
+        """Создать перечень элементов"""
         if not files_to_open:
-            self.log_error("Не выбрано ни одного файла!")
+            self.log_error("Вы не выбрали ни одного файла!")
             return
+
         try:
-            perechen_elementov.execute(files_to_open, self.c1.isChecked())
-            self.log_success("ПЭ создан(-ы)!")
+            created_files = PE.execute(files_to_open, self.c1.isChecked())
+            self.log_success("ПЭ успешно создан(-ы)!")
+
+            for file_path in created_files:
+                file_name = os.path.basename(file_path)
+                folder_path = os.path.dirname(file_path)
+                folder_url = QUrl.fromLocalFile(folder_path).toString()
+
+                link = (
+                    f'<a href="{folder_url}" '
+                    f'style="color: #0066cc; text-decoration: underline; font-size: 14px;">'
+                    f'📁 Открыть папку с {file_name}</a><br>'
+                )
+                self.txt_FilesListView.insertHtml(link)
+            self.txt_FilesListView.ensureCursorVisible()
+
+        except IOError:
+            self.log_error("Ошибка при создании ПЭ! Закройте открытые экземпляры перечня!")
         except Exception as e:
-            self.log_error(f"Ошибка при создании ПЭ: {e}")
+            self.log_error(f"Неизвестная ошибка: {e}")
 
-    def createSpecification(self):
+    def create_s(self):
+        """Создать спецификацию"""
         if not files_to_open:
             self.log_error("Не выбрано ни одного файла!")
             return
         try:
-            specification.execute(files_to_open, self.c1.isChecked())
+            S.execute(files_to_open, self.c1.isChecked())
             self.log_success("СП создана(-ы)!")
         except Exception as e:
             self.log_error(f"Ошибка при создании СП: {e}")
 
-    def createVedomost(self):
+    def create_vp(self):
+        """Создать ведомость покупную"""
         if not files_to_open:
             self.log_error("Не выбрано ни одного файла!")
             return
         try:
-            vedomost_pokupnih_izdeliy.execute(files_to_open)
+            VP.execute(files_to_open)
             self.log_success("ВП создана!")
         except Exception as e:
             self.log_error(f"Ошибка при создании ВП: {e}")
@@ -367,7 +408,6 @@ def main():
             with open(PROFILE_FILE, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=4)
         except Exception as e:
-            # Даже при выходе, попробуем вывести ошибку в консоль
             print(f"Ошибка сохранения при выходе: {e}")
 
     app.aboutToQuit.connect(save_on_exit)

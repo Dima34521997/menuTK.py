@@ -8,12 +8,12 @@ from docx.shared import Pt
 import pandas as pd
 from docxtpl import DocxTemplate
 # Мои импорты
-import obshiy_perechen
+import common_generator
 import editors as ed
 
 data: json
 
-# Генератор Спецификации
+# S - Генератор Спецификации
 cat_names_plural = ed.cat_names_plural
 cat_names_singular = ed.cat_names_singular
 
@@ -31,7 +31,7 @@ prim_not_install = {}  # Категории для "Не устанавлива�
 components_one_manuf_categories = {}
 civ: bool
 
-def slpit_to_format(string: str, shift_threshold):
+def split_to_format(string: str, shift_threshold):
     i = 0  # Индекс для добавления части наименования в уже существующую строку
     paste_string = ['']
     for name_part in string.split():
@@ -54,7 +54,7 @@ def export_to_word():
     if data['Templates_Path'] != "":
         path_to_template = data['Templates_Path']
     else:
-        path_to_template = obshiy_perechen.prog_dir + "\\Шаблоны"
+        path_to_template = common_generator.prog_dir + "\\Шаблоны"
 
     if not civ:
         doc = Document(path_to_template + '\\Шаблон СП.docx')
@@ -68,7 +68,7 @@ def export_to_word():
 
     module = dict_chars['C'][0].module
 
-    # Получаем итератори таблиц в документе и строк в нем
+    # Получаем итераторы таблиц в документе и строк в нем
     tables = iter(doc.tables)
     table = next(tables)
 
@@ -99,7 +99,7 @@ def export_to_word():
         row.cells[4].text = "Сборочный чертеж"
         row.cells[4].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.LEFT
 
-        paste_string = slpit_to_format((module + " СБ"), 34)
+        paste_string = split_to_format((module + " СБ"), 34)
 
         for string in paste_string:
             row.cells[3].text = string
@@ -114,7 +114,7 @@ def export_to_word():
             row.cells[4].text = "Схема электрическая"
             row.cells[4].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.LEFT
 
-            paste_string = slpit_to_format((module + " Э3"), 34)
+            paste_string = split_to_format((module + " Э3"), 34)
 
             for index, string in enumerate(paste_string):
                 row.cells[3].text = string
@@ -139,7 +139,7 @@ def export_to_word():
             row.cells[4].text = "Перечень элементов"
             row.cells[4].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.LEFT
 
-            paste_string = slpit_to_format((module + " ПЭ3"), 34)
+            paste_string = split_to_format((module + " ПЭ3"), 34)
             for string in paste_string:
                 row.cells[3].text = string
                 row.cells[3].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.LEFT
@@ -153,7 +153,7 @@ def export_to_word():
             row.cells[4].text = "Комплект карт для оценки"
             row.cells[4].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.LEFT
 
-            paste_string = slpit_to_format((module + " ДК"), 34)
+            paste_string = split_to_format((module + " ДК"), 34)
             for index, string in enumerate(paste_string):
                 row.cells[3].text = string
                 row.cells[3].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.LEFT
@@ -177,7 +177,7 @@ def export_to_word():
             row.cells[4].text = "Инструкция по"
             row.cells[4].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.LEFT
 
-            paste_string = slpit_to_format((module + " И1"), 34)
+            paste_string = split_to_format((module + " И1"), 34)
             for index, string in enumerate(paste_string):
                 row.cells[3].text = string
                 row.cells[3].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.LEFT
@@ -201,7 +201,7 @@ def export_to_word():
             row.cells[4].text = "Инструкция по настройке"
             row.cells[4].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.LEFT
 
-            paste_string = slpit_to_format((module + " И2"), 34)
+            paste_string = split_to_format((module + " И2"), 34)
             for string in paste_string:
                 row.cells[3].text = string
                 row.cells[3].paragraphs[0].alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.LEFT
@@ -274,8 +274,8 @@ def export_to_word():
 
                     cat_name = ''
                     if len(dict_chars[char]) > 1:
-                        for desig, d_cat_name in cat_names_plural.items():
-                            if char == desig:
+                        for designator, d_cat_name in cat_names_plural.items():
+                            if char == designator:
                                 cat_name = d_cat_name
 
                                 if char in components_one_manuf_categories.keys():
@@ -298,8 +298,8 @@ def export_to_word():
                             row_index = 1
                     # Если компонент один
                     else:
-                        for desig, d_cat_name in cat_names_singular.items():
-                            if char == desig:
+                        for designator, d_cat_name in cat_names_singular.items():
+                            if char == designator:
                                 cat_name = d_cat_name
 
                         chip.split_name(shift_threshold=32, cat_name=cat_name)
@@ -373,7 +373,7 @@ def export_to_word():
 
     new_name = pd.read_excel(files[0], sheet_name='BOM', header=None).loc[7, 10].split(' ')[0]
     if new_name == '':
-        print("Не заполнено поле 'Первичная Применямость'!")
+        print("Не заполнено поле 'Первичная Применяемость'!")
 
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -381,11 +381,11 @@ def export_to_word():
 
     doc = DocxTemplate(save_dir + new_name + ' СП (без полей).docx')
 
-    deviceName = pd.read_excel(files[0], sheet_name='BOM', header=None).loc[2, 0]
+    device_name = pd.read_excel(files[0], sheet_name='BOM', header=None).loc[2, 0]
 
     context = {"DocName": new_name + ' СП', "PervPrim": new_name, "Razrab": data['Razrab'],
                "Proveril": data['Proveril'], "N_control": data["N_control"], "Utverdil": data['Utverdil'],
-               "DeviceName": deviceName, "PlateName": new_name.split(' ')[0]}
+               "DeviceName": device_name, "PlateName": new_name.split(' ')[0]}
     doc.render(context)
 
     if civ:
@@ -410,19 +410,19 @@ def execute(input_files: list, is_civ: bool):
         dfs = []
         dict_chars = {}
 
-        obshiy_perechen.test = True
+        common_generator.test = True
 
-        obshiy_perechen.no_perechen = 1
+        common_generator.no_perechen = 1
         print("Получаю данные из перечней элементов...")
-        dfs, files = obshiy_perechen.get_dfs(dict_chars, [file])
+        dfs, files = common_generator.get_dfs(dict_chars, [file])
         print("Формирую общую таблицу элементов...")
-        dict_chars, prim_not_install, prim_cats, one_man_cats = obshiy_perechen.get_components(dict_chars, dfs, [file])
-        print("Проверяю примечения на регулирование...")
-        dict_chars = obshiy_perechen.split_to_regul(dict_chars)
+        dict_chars, prim_not_install, prim_cats, one_man_cats = common_generator.get_components(dict_chars, dfs, [file])
+        print("Проверяю примечания на регулирование...")
+        dict_chars = common_generator.split_to_regul(dict_chars)
         print("Комбинирую компоненты...")
-        dict_chars = obshiy_perechen.combine_chips_in_module(dict_chars)
+        dict_chars = common_generator.combine_chips_in_module(dict_chars)
         print("Комбинирую модули...")
-        dict_chars = obshiy_perechen.combine_modules(dict_chars)
+        dict_chars = common_generator.combine_modules(dict_chars)
         print("Вставляю готовый перечень в шаблон...")
         export_to_word()
     print("\n=============\n"

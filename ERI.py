@@ -8,7 +8,7 @@ from openpyxl import load_workbook
 from openpyxl.styles import PatternFill, Alignment, Font
 
 # Мои импорты
-import obshiy_perechen
+import common_generator
 import editors as ed
 
 # Генератор ПЭ

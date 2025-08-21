@@ -1,19 +1,16 @@
 import json
 import os
-
 import docx
 from docx import Document
 from docx.shared import Pt
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
 import pandas as pd
-
 # Мои импорты
 from docxtpl import DocxTemplate
-
-import obshiy_perechen
+import common_generator
 import editors as ed
 
-# Программа для создания ВП
+# VP - генератор ведомости покупной
 
 cat_names_plural = ed.cat_names_plural
 cat_names_singular = ed.cat_names_singular
@@ -42,7 +39,7 @@ def export_to_word():
     if data['Templates_Path'] != "":
         path_to_template = data['Templates_Path']
     else:
-        path_to_template = obshiy_perechen.prog_dir + "\\Шаблоны"
+        path_to_template = common_generator.prog_dir + "\\Шаблоны"
 
     doc = Document(path_to_template + '\\Шаблон ВП.docx')
 
@@ -293,19 +290,19 @@ def execute(input_files):
     dfs = []
     dict_chars = {}
 
-    obshiy_perechen.test = True
+    common_generator.test = True
 
-    obshiy_perechen.no_perechen = 1
+    common_generator.no_perechen = 1
     print("Получаю данные из перечней элементов...")
-    dfs, files = obshiy_perechen.get_dfs(dict_chars, files)
+    dfs, files = common_generator.get_dfs(dict_chars, files)
     print("Формирую общую таблицу элементов...")
-    dict_chars, prim_not_install, prim_cats, one_man_cats = obshiy_perechen.get_components(dict_chars, dfs, files)
-    print("Проверяю примечения на регулирование...")
-    dict_chars = obshiy_perechen.split_to_regul(dict_chars)
+    dict_chars, prim_not_install, prim_cats, one_man_cats = common_generator.get_components(dict_chars, dfs, files)
+    print("Проверяю примечания на регулирование...")
+    dict_chars = common_generator.split_to_regul(dict_chars)
     print("Комбинирую компоненты...")
-    dict_chars = obshiy_perechen.combine_chips_in_module(dict_chars)
+    dict_chars = common_generator.combine_chips_in_module(dict_chars)
     print("Комбинирую модули...")
-    dict_chars = obshiy_perechen.combine_modules(dict_chars)
+    dict_chars = common_generator.combine_modules(dict_chars)
     print("Вставляю готовый перечень в шаблон...")
     export_to_word()
 
